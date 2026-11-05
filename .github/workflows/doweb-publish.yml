@@ -1,0 +1,113 @@
+name: Publish DoWEB Dokploy image
+
+on:
+  push:
+    tags: ['v*-onepassword.*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-doweb-dokploy
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    name: Release validation
+    uses: ./.github/workflows/doweb-checks.yml
+
+  publish:
+    name: Publish to GHCR
+    needs: checks
+    if: github.repository == 'DoWEB-ApS/dokploy'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate the release revision and version
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$GITHUB_REF" != refs/heads/main ]; then
+            echo 'Manual publishing must run from main.' >&2
+            exit 1
+          fi
+          IMAGE=$(jq -r .image .github/doweb-release.json)
+          VERSION=$(jq -r .version .github/doweb-release.json)
+          test "$IMAGE" = ghcr.io/doweb-aps/dokploy
+          if [ "$GITHUB_REF_TYPE" = tag ]; then test "$GITHUB_REF_NAME" = "$VERSION"; fi
+          if gh api --paginate --slurp /orgs/DoWEB-ApS/packages/container/dokploy/versions > "$RUNNER_TEMP/package-versions.json" 2> "$RUNNER_TEMP/package-versions-error.txt"; then
+            if jq -e --arg version "$VERSION" 'any(.[][]; (.metadata.container.tags // []) | index($version))' "$RUNNER_TEMP/package-versions.json" > /dev/null; then
+              echo "Release tag $VERSION already exists in GHCR; choose a new version." >&2
+              exit 1
+            fi
+          elif ! grep -q 'HTTP 404' "$RUNNER_TEMP/package-versions-error.txt"; then
+            cat "$RUNNER_TEMP/package-versions-error.txt" >&2
+            exit 1
+          fi
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Prepare non-secret build configuration
+        run: |
+          cp apps/dokploy/.env.production.example .env.production
+          cp apps/dokploy/.env.production.example apps/dokploy/.env.production
+      - name: Build the release image
+        id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: |
+            ${{ steps.release.outputs.image }}:${{ steps.release.outputs.version }}
+            ${{ steps.release.outputs.image }}:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/DoWEB-ApS/dokploy
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.release.outputs.version }}
+          cache-from: type=gha,scope=dokploy-amd64
+          cache-to: type=gha,mode=max,scope=dokploy-amd64
+      - name: Verify the exact image before publishing
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: bash scripts/doweb/verify-image.sh "$IMAGE:$VERSION"
+      - name: Publish the tested image
+        id: published
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          docker push "$IMAGE:$VERSION"
+          docker push "$IMAGE:sha-$GITHUB_SHA"
+          DEPLOYMENT_IMAGE=$(docker image inspect "$IMAGE:$VERSION" --format '{{index .RepoDigests 0}}')
+          echo "deployment_image=$DEPLOYMENT_IMAGE" >> "$GITHUB_OUTPUT"
+      - name: Record the exact deployment image
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}
+          VERSION: ${{ steps.release.outputs.version }}
+          DEPLOYMENT_IMAGE: ${{ steps.published.outputs.deployment_image }}
+        run: |
+          {
+            echo "### Published $VERSION"
+            echo "Source commit: $GITHUB_SHA"
+            echo "Image: $DEPLOYMENT_IMAGE"
+            echo 'Production deployment remains a manual operator action.'
+          } >> "$GITHUB_STEP_SUMMARY"
