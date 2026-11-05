@@ -30,7 +30,6 @@ const dockerComposeServices = [
 	{ label: "networks", type: "keyword", info: "Define networks" },
 	{ label: "configs", type: "keyword", info: "Define configuration files" },
 	{ label: "secrets", type: "keyword", info: "Define secrets" },
-	{ label: "models", type: "keyword", info: "Define AI models" },
 ].map((opt) => ({
 	...opt,
 	apply: (
@@ -84,11 +83,6 @@ const dockerComposeServiceOptions = [
 	},
 	{ label: "restart", type: "keyword", info: "Restart policy" },
 	{ label: "networks", type: "keyword", info: "Networks to join" },
-	{
-		label: "models",
-		type: "keyword",
-		info: "AI models to use, referencing top-level models",
-	},
 ].map((opt) => ({
 	...opt,
 	apply: (

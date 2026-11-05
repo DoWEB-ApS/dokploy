@@ -45,7 +45,6 @@ const providerLabels = {
 	azure: "Azure Key Vault",
 	scaleway: "Scaleway Secret Manager",
 	phase: "Phase",
-	onepassword: "1Password Environments",
 } as const;
 
 type ProviderType = keyof typeof providerLabels;
@@ -68,7 +67,6 @@ const VaultProviderSchema = z
 			"azure",
 			"scaleway",
 			"phase",
-			"onepassword",
 		]),
 		url: z.string(),
 		token: z.string(),
@@ -101,8 +99,6 @@ const VaultProviderSchema = z
 		phaseEnv: z.string(),
 		phasePath: z.string(),
 		phaseApiUrl: z.string(),
-		onePasswordEnvironmentId: z.string(),
-		onePasswordToken: z.string(),
 		assignments: z.array(
 			z.object({
 				projectId: z.string(),
@@ -198,6 +194,7 @@ const VaultProviderSchema = z
 				path: ["phaseApiUrl"],
 			});
 		}
+
 		const required: Partial<
 			Record<ProviderType, [keyof typeof data, string][]>
 		> = {
@@ -239,10 +236,6 @@ const VaultProviderSchema = z
 				["phaseToken", "Service Account REST API token is required"],
 				["phaseAppId", "App ID is required"],
 				["phaseEnv", "Environment is required"],
-			],
-			onepassword: [
-				["onePasswordEnvironmentId", "Environment ID is required"],
-				["onePasswordToken", "Service account token is required"],
 			],
 		};
 
@@ -310,8 +303,6 @@ const defaultValues: VaultProviderForm = {
 	phaseEnv: "",
 	phasePath: "/",
 	phaseApiUrl: "https://api.phase.dev",
-	onePasswordEnvironmentId: "",
-	onePasswordToken: "",
 	assignments: [],
 };
 
@@ -383,12 +374,6 @@ const buildConfig = (data: VaultProviderForm) => {
 				env: data.phaseEnv,
 				path: data.phasePath || "/",
 				apiUrl: data.phaseApiUrl || "https://api.phase.dev",
-			};
-		case "onepassword":
-			return {
-				providerType: "onepassword" as const,
-				environmentId: data.onePasswordEnvironmentId,
-				serviceAccountToken: data.onePasswordToken,
 			};
 	}
 };
@@ -522,10 +507,6 @@ export const HandleVaultProvider = ({ vaultProviderId }: Props) => {
 					phasePath: provider.config.path,
 					phaseApiUrl: provider.config.apiUrl,
 				}),
-				...(provider.config.providerType === "onepassword" && {
-					onePasswordEnvironmentId: provider.config.environmentId,
-					onePasswordToken: provider.config.serviceAccountToken,
-				}),
 			});
 		} else if (!vaultProviderId) {
 			form.reset(defaultValues);
@@ -595,9 +576,8 @@ export const HandleVaultProvider = ({ vaultProviderId }: Props) => {
 					</DialogTitle>
 					<DialogDescription>
 						Reference secrets in your environment variables with{" "}
-						<code>{"${{vault.<name>.<secret>}}"}</code>. Secret values are
-						fetched at deploy time. Provider credentials are stored in Dokploy's
-						database.
+						<code>{"${{vault.<name>.<secret>}}"}</code>. Secrets are fetched at
+						deploy time and never stored in Dokploy.
 					</DialogDescription>
 				</DialogHeader>
 				{isError && <AlertBlock type="error">{error?.message}</AlertBlock>}
@@ -654,45 +634,6 @@ export const HandleVaultProvider = ({ vaultProviderId }: Props) => {
 								</FormItem>
 							)}
 						/>
-
-						{providerType === "onepassword" && (
-							<>
-								<FormField
-									control={form.control}
-									name="onePasswordEnvironmentId"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>1Password Environment ID</FormLabel>
-											<FormControl>
-												<Input
-													placeholder="Copy from 1Password Environment"
-													{...field}
-												/>
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-								<FormField
-									control={form.control}
-									name="onePasswordToken"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Service account token</FormLabel>
-											<FormControl>
-												<Input type="password" autoComplete="off" {...field} />
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-								<FormDescription>
-									Use a service account with read access to this Environment.
-									Reference a variable with{" "}
-									<code>{"${{vault.<name>.<variable>}}"}</code>.
-								</FormDescription>
-							</>
-						)}
 
 						{providerType === "hashicorp" && (
 							<>
@@ -1293,12 +1234,8 @@ export const HandleVaultProvider = ({ vaultProviderId }: Props) => {
 											key={project.projectId}
 											className="flex flex-col gap-1.5"
 										>
-											<label
-												htmlFor={`vault-project-${project.projectId}`}
-												className="flex flex-row items-center gap-2 text-sm cursor-pointer"
-											>
+											<label className="flex flex-row items-center gap-2 text-sm cursor-pointer">
 												<Checkbox
-													id={`vault-project-${project.projectId}`}
 													checked={!!assignment}
 													onCheckedChange={() =>
 														toggleProject(project.projectId)
@@ -1311,11 +1248,9 @@ export const HandleVaultProvider = ({ vaultProviderId }: Props) => {
 													{project.environments?.map((environment) => (
 														<label
 															key={environment.environmentId}
-															htmlFor={`vault-environment-${environment.environmentId}`}
 															className="flex flex-row items-center gap-1.5 text-xs text-muted-foreground cursor-pointer"
 														>
 															<Checkbox
-																id={`vault-environment-${environment.environmentId}`}
 																checked={assignment.environmentIds.includes(
 																	environment.environmentId,
 																)}

@@ -139,8 +139,7 @@ export const createCommand = (compose: ComposeNested, projectPath?: string) => {
 		const envFileFlag = compose.createEnvFile
 			? `--env-file ${quote([join(dirname(compose.composePath || "docker-compose.yml"), ".env")])} `
 			: "";
-		const pullFlag = compose.pullImages ? " --pull always" : "";
-		command = `compose -p ${quote([appName])} ${projectDirectoryFlag}${envFileFlag}-f ${quote([path])} up -d --build --remove-orphans${pullFlag}`;
+		command = `compose -p ${quote([appName])} ${projectDirectoryFlag}${envFileFlag}-f ${quote([path])} up -d --build --remove-orphans`;
 	} else if (composeType === "stack") {
 		command = `stack deploy -c ${quote([path])} ${quote([appName])} --prune --with-registry-auth`;
 	}

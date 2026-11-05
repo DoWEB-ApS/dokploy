@@ -92,7 +92,6 @@ export interface BillingStatus {
 	hasUsedTrial: boolean;
 	hasActiveAccess: boolean;
 	hasPaymentMethod: boolean;
-	isAnnual: boolean;
 }
 
 export const getBillingStatus = async (
@@ -107,7 +106,6 @@ export const getBillingStatus = async (
 			hasUsedTrial: false,
 			hasActiveAccess: true,
 			hasPaymentMethod: true,
-			isAnnual: false,
 		};
 	}
 
@@ -121,7 +119,6 @@ export const getBillingStatus = async (
 			hasUsedTrial: false,
 			hasActiveAccess: false,
 			hasPaymentMethod: false,
-			isAnnual: false,
 		};
 	}
 
@@ -149,9 +146,6 @@ export const getBillingStatus = async (
 	const hasPaymentMethod =
 		!!currentSub?.default_payment_method ||
 		!!customer?.invoice_settings?.default_payment_method;
-	const isAnnual =
-		(currentSub?.items.data[0]?.price as Stripe.Price | undefined)?.recurring
-			?.interval === "year";
 	const trialEndsAt = trialingSub?.trial_end
 		? new Date(trialingSub.trial_end * 1000)
 		: null;
@@ -170,6 +164,5 @@ export const getBillingStatus = async (
 		hasPaymentMethod,
 		hasUsedTrial: subscriptions.data.length > 0,
 		hasActiveAccess: plan !== null || !!trialingSub,
-		isAnnual,
 	};
 };

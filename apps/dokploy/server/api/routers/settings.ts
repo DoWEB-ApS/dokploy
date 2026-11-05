@@ -562,7 +562,7 @@ export const settingsRouter = createTRPCRouter({
 				"update",
 				"--force",
 				"--image",
-				`nillaska/dokploy:${data.latestVersion}`,
+				`dokploy/dokploy:${data.latestVersion}`,
 				"dokploy",
 			]);
 			await audit(ctx, {

@@ -111,20 +111,14 @@ export const ShowBilling = () => {
 	const [trialTier, setTrialTier] = useState<"hobby" | "startup" | null>(null);
 	const [switchingTrial, setSwitchingTrial] = useState(false);
 
-	const handleSwitchTrialPlan = async (
-		tier: "hobby" | "startup",
-		isAnnualPlan: boolean,
-		label?: string,
-	) => {
-		const planName =
-			label ??
-			`${tier === "startup" ? "Startup" : "Hobby"} ${isAnnualPlan ? "annual" : "monthly"}`;
+	const handleSwitchTrialPlan = async (tier: "hobby" | "startup") => {
+		const planName = tier === "startup" ? "Startup" : "Hobby";
 
 		const switchPlan = async () => {
 			await upgradeSubscription({
 				tier,
 				serverQuantity: tier === "startup" ? STARTUP_SERVERS_INCLUDED : 1,
-				isAnnual: isAnnualPlan,
+				isAnnual: false,
 			});
 			await new Promise((resolve) => setTimeout(resolve, 3000));
 			await Promise.all([
@@ -139,7 +133,7 @@ export const ShowBilling = () => {
 		await toast
 			.promise(switchPlan(), {
 				loading: `Switching to ${planName}...`,
-				success: `Your trial is now on ${planName}`,
+				success: `Your trial is now on the ${planName} plan`,
 				error: (error) =>
 					error instanceof Error ? error.message : "Error switching plan",
 			})
@@ -342,11 +336,6 @@ export const ShowBilling = () => {
 													<Badge className="capitalize" variant="secondary">
 														{billingStatus.plan ?? "Trial"}
 													</Badge>
-													{billingStatus.plan && (
-														<Badge variant="outline">
-															{billingStatus.isAnnual ? "Annual" : "Monthly"}
-														</Badge>
-													)}
 												</div>
 												<span className="text-sm text-muted-foreground">
 													{billingStatus.isOnTrial
@@ -367,45 +356,23 @@ export const ShowBilling = () => {
 											<div className="flex flex-wrap items-center gap-2">
 												{billingStatus.isOnTrial &&
 													useNewPricing &&
-													billingStatus.plan &&
-													billingStatus.plan !== "legacy" && (
-														<>
-															<Button
-																size="sm"
-																variant="outline"
-																isLoading={switchingTrial}
-																onClick={() =>
-																	handleSwitchTrialPlan(
-																		billingStatus.plan === "startup"
-																			? "hobby"
-																			: "startup",
-																		billingStatus.isAnnual,
-																	)
-																}
-															>
-																{billingStatus.plan === "startup"
-																	? "Switch to Hobby"
-																	: "Switch to Startup"}
-															</Button>
-															<Button
-																size="sm"
-																variant="outline"
-																isLoading={switchingTrial}
-																onClick={() =>
-																	handleSwitchTrialPlan(
-																		billingStatus.plan as "hobby" | "startup",
-																		!billingStatus.isAnnual,
-																		billingStatus.isAnnual
-																			? "monthly billing"
-																			: "annual billing",
-																	)
-																}
-															>
-																{billingStatus.isAnnual
-																	? "Switch to monthly"
-																	: "Switch to annual"}
-															</Button>
-														</>
+													billingStatus.plan && (
+														<Button
+															size="sm"
+															variant="outline"
+															isLoading={switchingTrial}
+															onClick={() =>
+																handleSwitchTrialPlan(
+																	billingStatus.plan === "startup"
+																		? "hobby"
+																		: "startup",
+																)
+															}
+														>
+															{billingStatus.plan === "startup"
+																? "Switch to Hobby"
+																: "Switch to Startup"}
+														</Button>
 													)}
 												<Button
 													size="sm"

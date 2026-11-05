@@ -13,14 +13,7 @@ export const vaultProviderType = pgEnum("VaultProviderType", [
 	"azure",
 	"scaleway",
 	"phase",
-	"onepassword",
 ]);
-
-export const onePasswordEnvironmentConfigSchema = z.object({
-	providerType: z.literal("onepassword"),
-	environmentId: z.string().min(1),
-	serviceAccountToken: z.string().min(1),
-});
 
 export const hashicorpVaultConfigSchema = z.object({
 	providerType: z.literal("hashicorp"),
@@ -104,7 +97,6 @@ export const vaultProviderConfigSchema = z.discriminatedUnion("providerType", [
 	azureVaultConfigSchema,
 	scalewayVaultConfigSchema,
 	phaseVaultConfigSchema,
-	onePasswordEnvironmentConfigSchema,
 ]);
 
 export type VaultProviderConfig = z.infer<typeof vaultProviderConfigSchema>;

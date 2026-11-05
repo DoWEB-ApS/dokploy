@@ -22,7 +22,6 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { api } from "@/utils/api";
 
 interface Props {
@@ -31,7 +30,6 @@ interface Props {
 
 const AddRedirectSchema = z.object({
 	command: z.string(),
-	pullImages: z.boolean(),
 });
 
 type AddCommand = z.infer<typeof AddRedirectSchema>;
@@ -59,25 +57,22 @@ export const AddCommandCompose = ({ composeId }: Props) => {
 	const form = useForm<AddCommand>({
 		defaultValues: {
 			command: "",
-			pullImages: false,
 		},
 		resolver: zodResolver(AddRedirectSchema),
 	});
 
 	useEffect(() => {
-		if (data) {
+		if (data?.command) {
 			form.reset({
-				command: data.command || "",
-				pullImages: data.pullImages ?? false,
+				command: data?.command || "",
 			});
 		}
-	}, [form, form.reset, form.formState.isSubmitSuccessful, data]);
+	}, [form, form.reset, form.formState.isSubmitSuccessful, data?.command]);
 
-	const onSubmit = async (formData: AddCommand) => {
+	const onSubmit = async (data: AddCommand) => {
 		await mutateAsync({
 			composeId,
-			command: formData.command,
-			pullImages: formData.pullImages,
+			command: data?.command,
 		})
 			.then(async () => {
 				toast.success("Command Updated");
@@ -114,30 +109,6 @@ export const AddCommandCompose = ({ composeId }: Props) => {
 							<strong>docker</strong>.
 						</AlertBlock>
 						<div className="flex flex-col gap-4">
-							{data?.composeType === "docker-compose" && (
-								<FormField
-									control={form.control}
-									name="pullImages"
-									render={({ field }) => (
-										<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-xs">
-											<div className="space-y-0.5">
-												<FormLabel>Pull latest images on deploy</FormLabel>
-												<FormDescription>
-													Adds <strong>--pull always</strong> to the default
-													command so every deploy fetches the newest image for
-													each tag. Has no effect when a custom command is set.
-												</FormDescription>
-											</div>
-											<FormControl>
-												<Switch
-													checked={field.value}
-													onCheckedChange={field.onChange}
-												/>
-											</FormControl>
-										</FormItem>
-									)}
-								/>
-							)}
 							<FormField
 								control={form.control}
 								name="command"

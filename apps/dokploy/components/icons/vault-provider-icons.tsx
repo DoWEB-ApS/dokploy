@@ -1,5 +1,3 @@
-import { KeyRound } from "lucide-react";
-
 interface Props {
 	className?: string;
 }
@@ -607,7 +605,6 @@ export const PhaseIcon = ({ className }: Props) => (
 );
 
 export const vaultProviderIcons = {
-	onepassword: KeyRound,
 	hashicorp: HashicorpVaultIcon,
 	infisical: InfisicalIcon,
 	aws: AwsIcon,
