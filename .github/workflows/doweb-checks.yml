@@ -1,0 +1,38 @@
+name: DoWEB validation
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Tests and types
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288 # v5
+        with:
+          version: 10.22.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+      - name: Install upstream test tools
+        run: |
+          curl -fsSL https://nixpacks.com/install.sh | NIXPACKS_VERSION=1.41.0 bash
+          curl -fsSL https://railpack.com/install.sh | RAILPACK_VERSION=0.15.4 bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.nixpacks/bin" >> "$GITHUB_PATH"
+      - name: Initialize isolated CI Docker Swarm
+        run: |
+          docker swarm init --advertise-addr 127.0.0.1
+          docker network create --driver overlay dokploy-network
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter=@dokploy/server run build
+      - name: Run the complete test suite
+        run: pnpm --filter=dokploy run test --run
+      - name: Check all workspace types
+        run: pnpm -r run typecheck

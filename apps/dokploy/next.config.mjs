@@ -10,6 +10,8 @@ const nextConfig = {
 		ignoreBuildErrors: true,
 	},
 	transpilePackages: ["@dokploy/server"],
+	// The 1Password SDK loads core_bg.wasm relative to its installed package.
+	serverExternalPackages: ["@1password/sdk", "@1password/sdk-core"],
 	async headers() {
 		return [
 			{

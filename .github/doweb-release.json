@@ -1,0 +1,9 @@
+{
+  "image": "ghcr.io/doweb-aps/dokploy",
+  "version": "v0.30.10-onepassword.1",
+  "upstream_version": "v0.30.10",
+  "upstream_commit": "073713f0b863eca4285ad24db00550af1b39397a",
+  "upstream_migration_count": 196,
+  "release_migration_count": 197,
+  "release_migration_timestamp": 1793870026931
+}
