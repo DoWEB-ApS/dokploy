@@ -2,6 +2,8 @@
 set -euo pipefail
 
 image=${1:?Usage: verify-image.sh IMAGE}
+http_port=${DOKPLOY_TEST_HTTP_PORT:-3000}
+docker_socket=${DOKPLOY_TEST_DOCKER_SOCKET:-/var/run/docker.sock}
 release=.github/doweb-release.json
 base=$(jq -r .upstream_commit "$release")
 expected_before=$(jq -r .upstream_migration_count "$release")
@@ -60,15 +62,15 @@ if [ "$(docker info --format '{{.Swarm.LocalNodeState}}')" != active ]; then
   docker swarm init --advertise-addr 127.0.0.1 >/dev/null
 fi
 docker run -d --name "$application" --network "$network" \
-  --publish 127.0.0.1:3000:3000 \
+  --publish "127.0.0.1:$http_port:3000" \
   --env DATABASE_URL="$url" --env BETTER_AUTH_SECRET="$auth_fixture" \
   --env ENCRYPTION_KEY="$encryption_fixture" \
   --env NEXT_TELEMETRY_DISABLED=1 \
-  --mount type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock,readonly \
+  --mount "type=bind,source=$docker_socket,target=/var/run/docker.sock,readonly" \
   "$image" >/dev/null
 
 for attempt in $(seq 1 90); do
-  if curl --fail --silent http://127.0.0.1:3000/api/trpc/settings.health > "$scratch/health.json"; then break; fi
+  if curl --fail --silent "http://127.0.0.1:$http_port/api/trpc/settings.health" > "$scratch/health.json"; then break; fi
   sleep 2
 done
 jq -e '.result.data.json.status == "ok"' "$scratch/health.json" >/dev/null

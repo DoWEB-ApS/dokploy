@@ -37,6 +37,8 @@ CI runs the complete test suite and type checks, builds a Linux AMD64 production
 
 GitHub Actions uses its short-lived `GITHUB_TOKEN` for GHCR publishing. No Docker Hub publishing token or production SSH credential is needed. New GHCR packages are private by default; VPS pull access is configured separately with a least-privilege `read:packages` credential maintained in 1Password.
 
+**This repository is public.** CI receives no production secrets. Its database/authentication/encryption test values are explicitly public fixtures used only in disposable CI resources. Checkout credential persistence is disabled. Do not print environment dumps or include credentials in source, logs, image layers, caches, or artifacts. Actions is restricted to the pinned revisions listed in [.github/doweb-actions-allowlist.json](.github/doweb-actions-allowlist.json); update that allowlist together with workflow pins.
+
 All Docker builds run on GitHub-hosted Ubuntu runners. These workflows do not connect to or update the production VPS.
 
 ## Manual production rollout

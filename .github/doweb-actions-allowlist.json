@@ -1,0 +1,12 @@
+{
+  "github_owned_allowed": false,
+  "verified_allowed": false,
+  "patterns_allowed": [
+    "actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+    "actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+    "pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288",
+    "docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f",
+    "docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9",
+    "docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8"
+  ]
+}
